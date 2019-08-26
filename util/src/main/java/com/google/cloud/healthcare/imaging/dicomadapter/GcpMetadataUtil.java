@@ -22,6 +22,7 @@ import com.google.api.client.http.HttpStatusCodes;
 import com.google.common.io.CharStreams;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,9 @@ public class GcpMetadataUtil {
 
       return CharStreams.toString(new InputStreamReader(
           httpResponse.getContent(), StandardCharsets.UTF_8));
+    } catch (UnknownHostException e){
+      log.trace("Not GCP environment, failed to get metadata for {} with exception {}", path, e);
+      return null;
     } catch (IOException | IllegalArgumentException e) {
       log.warn("Failed to get metadata for {} with exception {}", path, e);
       return null;
