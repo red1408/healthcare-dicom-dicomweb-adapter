@@ -49,6 +49,7 @@ repositories {
     mavenCentral()
     maven { url 'http://www.dcm4che.org/maven2/' }
     maven { url 'https://jitpack.io' }
+    maven { url 'https://raw.github.com/nroduit/mvn-repo/master/' }
 }
 
 dependencies {
@@ -56,8 +57,16 @@ dependencies {
     compile "com.beust:jcommander:1.72"
     compile 'com.google.auth:google-auth-library-oauth2-http:0.17.2'
     compile "com.google.api-client:google-api-client:1.30.5"
-    compile "org.dcm4che:dcm4che-core:3.3.8"
-    compile "org.dcm4che:dcm4che-net:3.3.8"
+    compile "org.dcm4che:dcm4che-core:5.18.1"
+    compile "org.dcm4che:dcm4che-net:5.18.1"
+
+    compile "org.dcm4che:dcm4che-imageio:5.18.1"
+    // runtime these
+    compile "org.dcm4che:dcm4che-imageio-opencv:5.18.1"
+    compile "org.dcm4che:dcm4che-imageio-rle:5.18.1"
+    compile "com.sun.media:jai_imageio:1.2-pre-dr-b04"
+
+
     compile project(":dicom_util")
     compile project(":util")
 

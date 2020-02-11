@@ -34,7 +34,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
+import org.dcm4che3.data.UID;
 import org.dcm4che3.data.VR;
+import org.dcm4che3.imageio.codec.Transcoder;
 import org.dcm4che3.io.DicomInputStream;
 import org.dcm4che3.net.Association;
 import org.dcm4che3.net.PDVInputStream;
@@ -118,7 +120,9 @@ public class CStoreService extends BasicCStoreSCP {
       MonitoringService.addEvent(Event.CSTORE_BYTES, countingStream.getCount());
     } catch (DicomWebException e) {
       MonitoringService.addEvent(Event.CSTORE_ERROR);
-      throw new DicomServiceException(e.getStatus(), e.getMessage(), e);
+      DicomServiceException serviceException = new DicomServiceException(e.getStatus(), e);
+      serviceException.setErrorComment(e.getMessage());
+      throw serviceException;
     } catch (DicomServiceException e) {
       MonitoringService.addEvent(Event.CSTORE_ERROR);
       throw e;
