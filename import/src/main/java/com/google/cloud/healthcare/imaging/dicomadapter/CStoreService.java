@@ -110,6 +110,13 @@ public class CStoreService extends BasicCStoreSCP {
       }
 
       processorList.add((inputStream, outputStream) -> {
+        try (Transcoder transcoder = new Transcoder(inputStream)) {
+          transcoder.setDestinationTransferSyntax(UID.ExplicitVRLittleEndian);
+          transcoder.transcode((transcoder1, dataset) -> outputStream);
+        }
+      });
+
+      processorList.add((inputStream, outputStream) -> {
         destinationClient.stowRs(inputStream);
       });
 
