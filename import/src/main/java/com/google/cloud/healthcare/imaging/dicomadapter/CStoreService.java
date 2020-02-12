@@ -102,24 +102,17 @@ public class CStoreService extends BasicCStoreSCP {
           DicomStreamUtil.dicomStreamWithFileMetaHeader(
               sopInstanceUID, sopClassUID, transferSyntax, countingStream);
 
-      List<StreamCallable> callableList = new ArrayList<>();
+      List<StreamProcessor> processorList = new ArrayList<>();
       if (redactor != null) {
-        callableList.add(new StreamCallable() {
-          @Override
-          void processStreams(InputStream inputStream, OutputStream outputStream) throws Exception {
-            redactor.redact(inputStream, outputStream);
-          }
-        });
+        processorList.add(redactor::redact);
       }
-      callableList.add(new StreamCallable() {
-        @Override
-        void processStreams(InputStream inputStream, OutputStream outputStream) throws Exception {
-          destinationClient.stowRs(inputStream);
-        }
+
+      processorList.add((inputStream, outputStream) -> {
+        destinationClient.stowRs(inputStream);
       });
 
-      executeStreamCallables(association.getApplicationEntity().getDevice().getExecutor(),
-          inWithHeader, callableList);
+      processStream(association.getApplicationEntity().getDevice().getExecutor(),
+          inWithHeader, processorList);
 
       response.setInt(Tag.Status, VR.US, Status.Success);
       MonitoringService.addEvent(Event.CSTORE_BYTES, countingStream.getCount());
@@ -150,24 +143,28 @@ public class CStoreService extends BasicCStoreSCP {
     return defaultDicomWebClient;
   }
 
-  private void executeStreamCallables(Executor underlyingExecutor, InputStream inputStream,
-      List<StreamCallable> callableList) throws Throwable {
-    if (callableList.size() == 1) {
-      StreamCallable singleCallable = callableList.get(0);
-      singleCallable.setInputStream(inputStream);
-      singleCallable.call();
-    } else if (callableList.size() > 1) {
+  private void processStream(Executor underlyingExecutor, InputStream inputStream,
+      List<StreamProcessor> processorList) throws Throwable {
+    if (processorList.size() == 1) {
+      StreamProcessor singleProcessor = processorList.get(0);
+      singleProcessor.process(inputStream, null);
+    } else if (processorList.size() > 1) {
+      List<StreamCallable> callableList = new ArrayList<>();
+
       PipedOutputStream pdvPipeOut = new PipedOutputStream();
       InputStream nextInputStream = new PipedInputStream(pdvPipeOut);
-      for(int i=0; i < callableList.size(); i++){
-        StreamCallable callable = callableList.get(i);
-        callable.setInputStream(nextInputStream);
+      for(int i=0; i < processorList.size(); i++){
+        StreamProcessor processor = processorList.get(i);
+        InputStream processorInput = nextInputStream;
+        OutputStream processorOutput = null;
 
-        if(i < callableList.size() - 1) {
+        if(i < processorList.size() - 1) {
           PipedOutputStream pipeOut = new PipedOutputStream();
+          processorOutput = pipeOut;
           nextInputStream = new PipedInputStream(pipeOut);
-          callable.setOutputStream(pipeOut);
         }
+
+        callableList.add(new StreamCallable(processorInput, processorOutput, processor));
       }
 
       ExecutorCompletionService<Void> ecs = new ExecutorCompletionService<>(underlyingExecutor);
@@ -193,28 +190,31 @@ public class CStoreService extends BasicCStoreSCP {
     }
   }
 
-  abstract private static class StreamCallable implements Callable<Void> {
-    private InputStream inputStream;
-    private OutputStream outputStream;
+  @FunctionalInterface
+  private interface StreamProcessor {
+    void process(InputStream inputStream, OutputStream outputStream) throws Exception;
+  }
 
-    public void setInputStream(InputStream inputStream) {
+  private static class StreamCallable implements Callable<Void> {
+    private final InputStream inputStream;
+    private final OutputStream outputStream;
+    private final StreamProcessor processor;
+
+    public StreamCallable(InputStream inputStream, OutputStream outputStream,
+        StreamProcessor processor) {
       this.inputStream = inputStream;
-    }
-
-    public void setOutputStream(OutputStream outputStream) {
       this.outputStream = outputStream;
+      this.processor = processor;
     }
 
     @Override
     public Void call() throws Exception {
-      try (InputStream finalInputStream = inputStream) {
-        try (OutputStream finalOutputStream = outputStream) {
-          processStreams(finalInputStream, finalOutputStream);
+      try (inputStream) {
+        try (outputStream) {
+          processor.process(inputStream, outputStream);
         }
       }
       return null;
     }
-
-    abstract void processStreams(InputStream inputStream, OutputStream outputStream) throws Exception;
   }
 }
