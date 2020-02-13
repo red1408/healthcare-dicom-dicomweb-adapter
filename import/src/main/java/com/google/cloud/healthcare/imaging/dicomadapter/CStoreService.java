@@ -111,7 +111,9 @@ public class CStoreService extends BasicCStoreSCP {
 
       processorList.add((inputStream, outputStream) -> {
         try (Transcoder transcoder = new Transcoder(inputStream)) {
-          transcoder.setDestinationTransferSyntax(UID.ExplicitVRLittleEndian);
+          transcoder.setIncludeFileMetaInformation(true);
+          transcoder.setRetainFileMetaInformation(true); // only matters if include is also true
+          transcoder.setDestinationTransferSyntax(UID.ExplicitVRLittleEndian); //JPEGBaseline1 ExplicitVRLittleEndian
           transcoder.transcode((transcoder1, dataset) -> outputStream);
         }
       });
