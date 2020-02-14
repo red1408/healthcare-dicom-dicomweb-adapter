@@ -58,13 +58,21 @@ public class CStoreService extends BasicCStoreSCP {
   private final IDicomWebClient defaultDicomWebClient;
   private final Map<DestinationFilter, IDicomWebClient> destinationMap;
   private final DicomRedactor redactor;
+  private final String transcodeToSyntax;
 
   CStoreService(IDicomWebClient defaultDicomWebClient,
       Map<DestinationFilter, IDicomWebClient> destinationMap,
-      DicomRedactor redactor) {
+      DicomRedactor redactor, String transcodeToSyntax) {
     this.defaultDicomWebClient = defaultDicomWebClient;
-    this.destinationMap = destinationMap;
+    this.destinationMap =
+        destinationMap != null && destinationMap.size() > 0 ? destinationMap : null;
     this.redactor = redactor;
+    this.transcodeToSyntax =
+        transcodeToSyntax != null && transcodeToSyntax.length() > 0 ? transcodeToSyntax : null;
+
+    if(this.transcodeToSyntax != null) {
+      log.info("Transcoding to: " + transcodeToSyntax);
+    }
   }
 
   @Override
@@ -87,7 +95,7 @@ public class CStoreService extends BasicCStoreSCP {
 
       final CountingInputStream countingStream;
       final IDicomWebClient destinationClient;
-      if(destinationMap != null && destinationMap.size() > 0){
+      if(destinationMap != null){
         DicomInputStream inDicomStream  = new DicomInputStream(inPdvStream);
         inDicomStream.mark(Integer.MAX_VALUE); // do or die (OOM)
         Attributes attrs = inDicomStream.readDataset(-1, Tag.PixelData);
@@ -109,14 +117,16 @@ public class CStoreService extends BasicCStoreSCP {
         processorList.add(redactor::redact);
       }
 
-      processorList.add((inputStream, outputStream) -> {
-        try (Transcoder transcoder = new Transcoder(inputStream)) {
-          transcoder.setIncludeFileMetaInformation(true);
-          transcoder.setRetainFileMetaInformation(true); // only matters if include is also true
-          transcoder.setDestinationTransferSyntax(UID.ExplicitVRLittleEndian); //JPEGBaseline1 ExplicitVRLittleEndian
-          transcoder.transcode((transcoder1, dataset) -> outputStream);
-        }
-      });
+      if(transcodeToSyntax != null && !transcodeToSyntax.equals(transferSyntax)) {
+        processorList.add((inputStream, outputStream) -> {
+          try (Transcoder transcoder = new Transcoder(inputStream)) {
+            transcoder.setIncludeFileMetaInformation(true);
+            //transcoder.setRetainFileMetaInformation(true); // only matters if include is also true
+            transcoder.setDestinationTransferSyntax(transcodeToSyntax);
+            transcoder.transcode((transcoder1, dataset) -> outputStream);
+          }
+        });
+      }
 
       processorList.add((inputStream, outputStream) -> {
         destinationClient.stowRs(inputStream);

@@ -85,7 +85,7 @@ public final class CStoreServiceTest {
       }
     }
     CStoreService cStoreService =
-        new CStoreService(dicomWebClient, destinationMap, null);
+        new CStoreService(dicomWebClient, destinationMap, null, null);
     serviceRegistry.addDicomService(cStoreService);
     Device serverDevice = DeviceUtil.createServerDevice(serverAET, serverPort, serviceRegistry);
     serverDevice.bindConnections();
