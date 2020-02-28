@@ -20,6 +20,7 @@ import com.google.cloud.healthcare.IDicomWebClient;
 import com.google.cloud.healthcare.imaging.dicomadapter.util.DimseRSPAssert;
 import com.google.cloud.healthcare.imaging.dicomadapter.util.PortUtil;
 import com.google.cloud.healthcare.util.TestUtils;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -69,7 +70,8 @@ public final class CStoreServiceTest {
   private int createDicomServer(
       boolean connectError,
       int responseCode,
-      MockDestinationConfig[] destinationConfigs) throws Exception {
+      MockDestinationConfig[] destinationConfigs,
+      String transcodeToSyntax) throws Exception {
     int serverPort = PortUtil.getFreePort();
     DicomServiceRegistry serviceRegistry = new DicomServiceRegistry();
     serviceRegistry.addDicomService(new BasicCEchoSCP());
@@ -85,7 +87,7 @@ public final class CStoreServiceTest {
       }
     }
     CStoreService cStoreService =
-        new CStoreService(dicomWebClient, destinationMap, null, null);
+        new CStoreService(dicomWebClient, destinationMap, null, transcodeToSyntax);
     serviceRegistry.addDicomService(cStoreService);
     Device serverDevice = DeviceUtil.createServerDevice(serverAET, serverPort, serviceRegistry);
     serverDevice.bindConnections();
@@ -146,20 +148,9 @@ public final class CStoreServiceTest {
         Status.CannotUnderstand,
         null,
         UID.MRImageStorage,
-        null);
-  }
-
-  private void basicCStoreServiceTest(
-      boolean connectionError,
-      int httpStatus,
-      int expectedDimseStatus) throws Exception {
-    basicCStoreServiceTest(
-        connectionError,
-        httpStatus,
-        expectedDimseStatus,
         null,
-        UID.MRImageStorage,
-        "1.0.0.0");
+        TestUtils.TEST_MR_FILE,
+        null);
   }
 
   @Test
@@ -275,6 +266,33 @@ public final class CStoreServiceTest {
         });
   }
 
+  @Test
+  public void testCStoreService_transcodeToJpeg2k() throws Exception {
+    basicCStoreServiceTest(
+        false,
+        HttpStatusCodes.STATUS_CODE_OK,
+        Status.Success,
+        null,
+        UID.SecondaryCaptureImageStorage,
+        "1.2.276.0.7230010.3.1.4.1784944219.230771.1519337370.699151",
+        TestUtils.TEST_IMG_FILE,
+        UID.JPEG2000);
+  }
+
+  private void basicCStoreServiceTest(
+      boolean connectionError,
+      int httpStatus,
+      int expectedDimseStatus) throws Exception {
+    basicCStoreServiceTest(
+        connectionError,
+        httpStatus,
+        expectedDimseStatus,
+        null,
+        UID.MRImageStorage,
+        "1.0.0.0",
+        TestUtils.TEST_MR_FILE,
+        null);
+  }
 
   private void basicCStoreServiceTest(
       boolean connectionError,
@@ -287,7 +305,9 @@ public final class CStoreServiceTest {
         expectedDimseStatus,
         destinationConfigs,
         UID.MRImageStorage,
-        "1.0.0.0");
+        "1.0.0.0",
+        TestUtils.TEST_MR_FILE,
+        null);
   }
 
   private void basicCStoreServiceTest(
@@ -296,14 +316,16 @@ public final class CStoreServiceTest {
       int expectedDimseStatus,
       MockDestinationConfig[] destinationConfigs,
       String sopClassUID,
-      String sopInstanceUID) throws Exception {
+      String sopInstanceUID,
+      String testFile,
+      String transcodeToSyntax) throws Exception {
     InputStream in =
         new DicomInputStream(TestUtils.streamDICOMStripHeaders(TestUtils.TEST_MR_FILE));
     InputStreamDataWriter data = new InputStreamDataWriter(in);
 
     // Create C-STORE DICOM server.
     int serverPort =
-        createDicomServer(connectionError, httpStatus, destinationConfigs);
+        createDicomServer(connectionError, httpStatus, destinationConfigs, transcodeToSyntax);
 
     // Associate with peer AE.
     Association association =
@@ -354,6 +376,12 @@ public final class CStoreServiceTest {
       }
       if (httpResponseCode != HttpStatusCodes.STATUS_CODE_OK) {
         throw new DicomWebException("mock error", httpResponseCode, Status.ProcessingFailure);
+      }
+
+      try {
+        in.readAllBytes();
+      } catch (IOException e) {
+        throw new DicomWebException(e);
       }
     }
   }
