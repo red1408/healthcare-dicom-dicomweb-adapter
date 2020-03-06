@@ -360,7 +360,7 @@ public final class CStoreServiceTest {
     }
 
     @Override
-    public MultipartInput wadoRs(String path) throws DicomWebException {
+    public InputStream wadoRs(String path) throws DicomWebException {
       throw new UnsupportedOperationException();
     }
 

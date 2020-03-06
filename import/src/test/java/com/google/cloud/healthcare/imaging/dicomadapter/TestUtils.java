@@ -46,7 +46,7 @@ public class TestUtils {
   public static abstract class DicomWebClientTestBase implements IDicomWebClient {
 
     @Override
-    public MultipartInput wadoRs(String path) throws DicomWebException {
+    public InputStream wadoRs(String path) throws DicomWebException {
       return null;
     }
 
