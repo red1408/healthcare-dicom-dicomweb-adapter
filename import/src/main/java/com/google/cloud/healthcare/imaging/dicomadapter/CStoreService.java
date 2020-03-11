@@ -194,9 +194,9 @@ public class CStoreService extends BasicCStoreSCP {
         ecs.submit(callable);
       }
 
-      try (pdvPipeOut) {
+      try (PipedOutputStream localPdvPipeOut = pdvPipeOut) {
         // PDVInputStream is thread-locked
-        StreamUtils.copy(inputStream, pdvPipeOut);
+        StreamUtils.copy(inputStream, localPdvPipeOut);
       } catch (IOException e) {
         // causes or is caused by exception in redactor.redact, no need to throw this up
         log.trace("Error copying inputStream to pdvPipeOut", e);
@@ -231,9 +231,9 @@ public class CStoreService extends BasicCStoreSCP {
 
     @Override
     public Void call() throws Exception {
-      try (inputStream) {
-        try (outputStream) {
-          processor.process(inputStream, outputStream);
+      try (InputStream localInputStream = inputStream) {
+        try (OutputStream localOutputStream = outputStream) {
+          processor.process(localInputStream, localOutputStream);
         }
       }
       return null;
