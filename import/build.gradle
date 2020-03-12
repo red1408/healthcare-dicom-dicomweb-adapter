@@ -70,7 +70,7 @@ dependencies {
 
     compile "org.dcm4che:dcm4che-imageio:5.18.1"
     runtime "org.dcm4che:dcm4che-imageio-rle:5.18.1"
-    runtime "com.github.red1408:jai-imageio-core:a2f9131b"
+    runtime "com.github.red1408:jai-imageio-jpeg2000:aec3d03d"
 
     compile project(":dicom_util")
     compile project(":util")
