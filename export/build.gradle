@@ -105,8 +105,8 @@ task downloadSourceJars( type: Copy ) {
 
 // OSS release requires license and source code to be included in Docker image.
 task copySourceAndLicenseToDockerImage {
-  //dependsOn tasks.downloadLicenses
-  //dependsOn tasks.downloadSourceJars
+  dependsOn tasks.downloadLicenses
+  dependsOn tasks.downloadSourceJars
 }
 
 task printVersion {
@@ -115,9 +115,9 @@ task printVersion {
     }
 }
 
-//dockerCopyDistResources.finalizedBy tasks.copySourceAndLicenseToDockerImage
-//dockerDistTar {
-//    //instruction {'ADD license /usr/share/oss-license'}
-//    //instruction {'ADD source /usr/share/oss-source'}
-//}
+dockerSyncBuildContext.finalizedBy tasks.copySourceAndLicenseToDockerImage
+dockerCreateDockerfile {
+    instruction 'ADD license /usr/share/oss-license'
+    instruction 'ADD source /usr/share/oss-source'
+}
 
