@@ -47,6 +47,8 @@ public class DicomWebClientJetty implements IDicomWebClient {
       String stowPath) {
     this.credentials = credentials;
     this.stowPath = stowPath;
+
+    GoogleDicomWebValidation.validatePath(this.stowPath, GoogleDicomWebValidation.STUDIES_PATH_VALIDATION);
   }
 
   @Override
