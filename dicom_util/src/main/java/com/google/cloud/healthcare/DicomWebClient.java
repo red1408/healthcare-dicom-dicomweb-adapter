@@ -47,7 +47,7 @@ public class DicomWebClient implements IDicomWebClient {
     this.requestFactory = requestFactory;
     this.serviceUrlPrefix = StringUtil.trim(serviceUrlPrefix);
 
-    GoogleDicomWebValidation.validatePath(this.serviceUrlPrefix, GoogleDicomWebValidation.DICOMWEB_PATH_VALIDATION);
+    DicomWebValidation.validatePath(this.serviceUrlPrefix, DicomWebValidation.DICOMWEB_ROOT_VALIDATION);
   }
 
   /**
