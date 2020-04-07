@@ -37,7 +37,7 @@ run {
 
 buildDir = '/tmp/gradle_build/dicom_adapter/export'
 
-sourceCompatibility = 1.11
+sourceCompatibility = 1.8
 version = '0.1'
 
 compileJava {
@@ -115,9 +115,9 @@ task printVersion {
     }
 }
 
-dockerCopyDistResources.finalizedBy tasks.copySourceAndLicenseToDockerImage
-dockerDistTar {
-    instruction {'ADD license /usr/share/oss-license'}
-    instruction {'ADD source /usr/share/oss-source'}
-}
+//dockerCopyDistResources.finalizedBy tasks.copySourceAndLicenseToDockerImage
+//dockerDistTar {
+//    instruction {'ADD license /usr/share/oss-license'}
+//    instruction {'ADD source /usr/share/oss-source'}
+//}
 
